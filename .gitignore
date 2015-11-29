@@ -1,3 +1,6 @@
 # VC++ Files
 *.obj
 *.exe
+
+# Vim temp files
+*~
