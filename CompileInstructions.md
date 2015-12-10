@@ -6,6 +6,8 @@ Example:
 * `cl -EHsc BigInt.cpp -Fe'The output file.exe'` will create `The output file.obj` and `The output file.exe`.
 * `cl -EHsc BigInt.cpp` will create `BigInt.obj` and `BigInt.exe`.
 
+Note that the single-quotation marks are needed only if the output file has spaces in them. Do not add them for files that are just one word long.
+
 ### To run the executable
 
 `'.\Name of Executable.exe'`

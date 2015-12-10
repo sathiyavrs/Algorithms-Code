@@ -16,20 +16,27 @@ class DirectedGraph
 {
 	private:
 		int **_graphMatrix;
+		int **_badEdgeMatrix;
+
+		int *_childCount;
+		int *_parentCount;
+
 		int _vertexCount;
 		int _edgeCount;
+		int _leafCount;
+		int _badEdgeCount;
 		int _id;
 
 		bool _accessToMatrix;
 		bool _debugGraph;
 
-		void InitializeMatrix()
+		void InitializeMatrix(int **matrix)
 		{
 			for (int i = 0; i < VERTEX_COUNT_MAX; i++)
 				for (int j = 0; j < VERTEX_COUNT_MAX; j++)
-					_graphMatrix[i][j] = 0;
+					matrix[i][j] = 0;
 
-			_edgeCount = 0;
+			matrix = 0;
 		}
 
 		void InitializeParameters()
@@ -37,9 +44,8 @@ class DirectedGraph
 			_accessToMatrix = false;
 			_debugGraph = true;
 			_edgeCount = 0;
-
-			_id = GraphCurrentID;
-			GraphCurrentID++;
+			_leafCount = _vertexCount;
+			_badEdgeCount = 0;
 		}
 
 		int** InstantiateMatrix()
@@ -51,35 +57,54 @@ class DirectedGraph
 			return matrix;
 		}
 
+		void InitializeArray(int* array)
+		{
+			for (int i = 0; i < VERTEX_COUNT_MAX; i++)
+				array[i] = 0;
+		}
+
 	public:
 		DirectedGraph(int V)
 		{
-			_vertexCount = V;
 			_graphMatrix = InstantiateMatrix();
-			InitializeMatrix();
-			InitializeParameters();
+			_childCount = new int[VERTEX_COUNT_MAX];
+			_parentCount = new int[VERTEX_COUNT_MAX];
+			_badEdgeMatrix = InstantiateMatrix();
+
+			Reconstruct(V);
+
+			_id = GraphCurrentID;
+			GraphCurrentID++;
 		}
 
 		void Reconstruct(int V)
 		{
 			_vertexCount = V;
 
-			/*
-				_graphMatrix = new int*[VERTEX_COUNT_MAX];
-				for (int i = 0; i < _vertexCount; i++)
-					_graphMatrix[i] = new int[VERTEX_COUNT_MAX];
-
-			*/
-			InitializeMatrix();
+			InitializeMatrix(_graphMatrix);
+			InitializeMatrix(_badEdgeMatrix);
 			InitializeParameters();
+			InitializeArray(_childCount);
+			InitializeArray(_parentCount);
 		}
 
 		~DirectedGraph()
 		{
-			for (int i = 0; i < _vertexCount; i++)
+			for (int i = 0; i < VERTEX_COUNT_MAX; i++)
 				delete[] _graphMatrix[i];
 			
 			delete[] _graphMatrix;
+
+			for (int i = 0; i < VERTEX_COUNT_MAX; i++)
+				delete[] _badEdgeMatrix[i];
+			
+			delete[] _badEdgeMatrix;
+
+			delete[] _childCount;
+			delete[] _parentCount;
+
+			if (_debugGraph)
+				cout << "Directed graph with id = " << _id << " has been destroyed!" << endl;
 		}
 
 		bool IsEdge(int i, int j)
@@ -94,7 +119,9 @@ class DirectedGraph
 
 		void SetEdgeTrue(int i, int j)
 		{
-			if(!IsEdgeInLimits(i, j))
+			int badEdgeCount = 0;
+
+			if (!IsEdgeInLimits(i, j))
 			{
 				if (_debugGraph)
 					DebugPrint("Outside Graph Vertex Count");
@@ -104,11 +131,38 @@ class DirectedGraph
 
 			_graphMatrix[i][j] = 1;
 			_edgeCount++;
+			_childCount[i]++;
+			_parentCount[j]++;
+
+			if (_childCount[i] == 1)
+				_leafCount--;
+
+			if (_parentCount[j] == 2)
+			{
+				for (int iterator = 0; iterator < _vertexCount; iterator++)
+				{
+					if (_graphMatrix[iterator][j] == 1)
+					{
+						_badEdgeMatrix[iterator][j] = 1;
+						_badEdgeCount++;
+						badEdgeCount++;
+					}
+					
+					if (badEdgeCount >= 2)
+						return;
+				}
+			}
+
+			if (_parentCount[j] > 2)
+			{
+				_badEdgeMatrix[i][j] = 1;
+				_badEdgeCount++;
+			}
 		}
 
 		void SetEdgeFalse(int i, int j)
 		{
-			if(!IsEdgeInLimits(i, j))
+			if (!IsEdgeInLimits(i, j))
 			{
 				if (_debugGraph)
 					DebugPrint("Outside Graph Vertex Count");
@@ -116,8 +170,28 @@ class DirectedGraph
 				return;
 			}
 
+			if (_badEdgeMatrix[i][j] == 1)
+				_badEdgeCount--;
+
 			_graphMatrix[i][j] = 0;
+			_badEdgeMatrix[i][j] = 0;
 			_edgeCount--;
+			_childCount[i]--;
+			_parentCount[j]--;
+
+			if (_childCount[i] == 0)
+				_leafCount++;
+
+			if (_parentCount[j] == 1)
+			{
+				_badEdgeMatrix[i][j] = 0;
+				_badEdgeCount--;
+			}
+		}
+
+		int GetChildCount(int index)
+		{
+			return _childCount[index];
 		}
 
 		int GetVertexCount()
@@ -134,7 +208,7 @@ class DirectedGraph
 				for (int j = 0; j < _vertexCount; j++)
 					matrixCopy[i][j] = _graphMatrix[i][j];
 
-			if(_debugGraph)
+			if (_debugGraph)
 				DebugPrint("Matrix Copy created for id " + _id);
 
 			return matrixCopy;
@@ -143,20 +217,20 @@ class DirectedGraph
 		void AllowAccess()
 		{
 			_accessToMatrix = true;
-			if(_debugGraph)
+			if (_debugGraph)
 				DebugPrint("Access to graph Matrix given for graph id " + _id);
 		}
 
 		void ResetAccess()
 		{
 			_accessToMatrix = false;
-			if(_debugGraph)
+			if (_debugGraph)
 				DebugPrint("Access to graph Matrix reset for graph id " + _id);
 		}
 
 		int** ForcegetGraphMatrix()
 		{
-			if(_debugGraph)
+			if (_debugGraph)
 				DebugPrint("Forceget Matrix called!");
 			return _graphMatrix;
 		}
@@ -171,15 +245,70 @@ class DirectedGraph
 
 		}
 
-		void PrintMatrix()
+		void PrintGraph()
+		{
+			cout << "The graph matrix is: " << endl << endl;
+			PrintMatrix(_graphMatrix);
+		}
+
+		void PrintMatrix(int** matrix)
 		{
 			for (int i = 0; i < _vertexCount; i++)
 			{
 				for (int j = 0; j < _vertexCount; j++)
-					cout << _graphMatrix[i][j] << ' ';
+					cout << matrix[i][j] << ' ';
 
 				cout << endl;
 			}
+			cout << endl;
+
+		}
+
+		void PrintData()
+		{
+			cout << endl;
+			PrintGraph();
+			
+			cout << "The bad-edge matrix is: " << endl << endl;
+			PrintMatrix(_badEdgeMatrix);
+
+			PrintNodeDetails();
+			cout << "Leaf Count : " << _leafCount << endl;
+			cout << "Edge Count : " << _edgeCount << endl;
+			cout << "Vertex Count : " << _vertexCount << endl;
+			cout << "Bad Edge Count : " << _badEdgeCount << endl;
+
+			cout << endl;
+		}
+
+		void PrintNodeDetails()
+		{
+			cout << "The child counts are : " << endl << endl;
+			for (int i = 0; i < _vertexCount; i++)
+				cout << i << " : " << _childCount[i] << endl;
+
+			cout << endl;
+
+			cout << "The parent counts are : " << endl << endl;
+			for (int i = 0; i < _vertexCount; i++)
+				cout << i << " : " << _parentCount[i] << endl;
+
+			cout << endl;
+		}
+
+		int GetEdgeCount()
+		{
+			return _edgeCount;
+		}
+
+		int GetLeafCount()
+		{
+			return _leafCount;
+		}
+
+		int GetBadEdgeCount()
+		{
+			return _badEdgeCount;
 		}
 
 };
@@ -203,7 +332,7 @@ void GetInput(DirectedGraph& graph)
 	}
 
 	if (debug)
-		graph.PrintMatrix();
+		graph.PrintData();
 }
 
 int main()
@@ -215,6 +344,8 @@ int main()
 	while (T--)
 	{
 		GetInput(graph);
+		graph.PrintData();
 	}
-
+	
+	return 0;
 }

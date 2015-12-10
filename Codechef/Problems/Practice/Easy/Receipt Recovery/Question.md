@@ -32,7 +32,8 @@ There is no sequence `S1, S2, ..., Sk` such that the piece `Si` can be immediate
 
 ##Example
 
-#####Input:
+#####Inputs and Outputs
+Input:
 ```
 3
 3 3
@@ -48,10 +49,80 @@ There is no sequence `S1, S2, ..., Sk` such that the piece `Si` can be immediate
 3 4
 2 5
 ```
-
-#####Output:
+Output:
 ```
 1
 2
 2
+```
+Input:
+```
+1
+5 7
+1 2
+1 3
+2 4
+2 5
+3 4
+3 5
+4 5
+```
+Output:
+```
+2
+```
+Input:
+```
+1
+7 9
+1 2
+1 3
+1 4
+2 5
+2 6
+3 6
+3 7
+4 7
+4 5
+```
+Output:
+```
+3
+```
+Input:
+```
+1
+9 11
+1 2
+1 3
+1 4
+1 5
+2 6
+2 7
+3 7
+3 8
+4 8
+4 9
+5 9
+```
+Output:
+```
+4
+```
+Input:
+```
+1
+9 8
+1 2
+1 3
+1 4
+2 5
+2 6
+3 7
+4 8
+4 9
+```
+Output:
+```
+5
 ```
