@@ -4,3 +4,6 @@
 
 # Vim temp files
 *~
+
+# VS
+*vs/*

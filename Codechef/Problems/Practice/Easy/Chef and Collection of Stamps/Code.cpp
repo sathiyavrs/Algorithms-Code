@@ -4,6 +4,11 @@
 #define TYPE_MAX 50000
 #define NUMBER_MAX 200000
 
+#define CHECK_NONE 0
+#define CHECK_X 1
+#define CHECK_Y 2
+#define CHECK_XY 3
+
 using namespace std;
 
 void DebugPrint(string s)
@@ -24,7 +29,7 @@ class DayInformation
 	private:
 		int _day;
 		int _count;
-		bool _debug = true;
+		bool _debug = false;
 		
 		OrderedPair* _head;
 		OrderedPair* _tail;
@@ -157,7 +162,7 @@ class DayInformation
 			cout << "Pairs: " << endl;
 			for (int i = 0; i < _count; i++)
 			{
-				cout << "\t" << iteratorPair -> x << " " << iteratorPair -> y << endl;
+				cout << iteratorPair -> x << " " << iteratorPair -> y << endl;
 				iteratorPair = iteratorPair -> next;
 			}
 			
@@ -165,6 +170,402 @@ class DayInformation
 		}
 		
 		
+};
+
+struct RelationNode
+{
+	int Content;
+	RelationNode* next;
+	void* head;
+};
+
+struct RelationHead
+{
+	int Content;
+	int Count;
+	RelationNode* first;
+	RelationNode* last;
+	RelationHead* next;
+};
+
+class RelationshipList
+{
+	private:
+		int _headCount;
+		RelationHead* _head;
+		bool _debug = true;
+		
+		void DeleteRelationHead(RelationHead* head)
+		{
+			if (head == NULL)
+				return;
+			
+			if (head -> Count == 0)
+			{
+				delete head;
+				return;
+			}
+			
+			RelationNode* toDelete = head -> first;
+			RelationNode* iterator = head -> first;
+			
+			for (int i = 0; i < head -> Count; i++)
+			{
+				iterator = iterator -> next;
+				delete toDelete;
+				toDelete = iterator;
+			}
+			
+			delete head;
+		}
+		
+		void DeleteRelationships()
+		{
+			if (_headCount == 0)
+				return;
+			
+			RelationHead* toDelete = _head;
+			for (int i = 0; i < _headCount; i++)
+			{
+				_head = _head -> next;
+				DeleteRelationHead(toDelete);
+				toDelete = _head;
+			}
+			
+			_headCount = 0;
+		}
+	
+	public:
+		RelationshipList()
+		{
+			_headCount = 0;
+		}
+		
+		~RelationshipList()
+		{
+			DeleteRelationships();
+		}
+		
+		void AddRelationship(int x, int y)
+		{
+			if (x == y)
+				return;
+			
+			if (_headCount == 0)
+			{
+				_head = new RelationHead();
+				_head -> Count = 1;
+				_head -> Content = x;
+				
+				_head -> first = new RelationNode();
+				_head -> first -> Content = y;
+				
+				_head -> last = _head -> first;
+				
+				_head -> next = new RelationHead();
+				_head -> next -> Count = 1;
+				_head -> next -> Content = y;
+				
+				_head -> next -> first = new RelationNode();
+				_head -> next -> first -> Content = x;
+				
+				_head -> next -> first -> head = _head;
+				_head -> first -> head = _head -> next;
+				
+				_head -> next -> last = _head -> next -> first;
+				
+				_headCount = 2;
+				
+				return;
+			}
+			
+			int check = 0;
+			RelationHead* iterator = _head;
+			RelationHead* previous;
+			RelationNode* node;
+			
+			// xHead -> content = x; yHead -> content = y;
+			RelationHead* xHead;
+			RelationHead* yHead;
+			
+			// xNode -> content = x; yNode -> content = y;
+			RelationNode* xNode;
+			RelationNode* yNode;
+			
+			for (int i = 0; i < _headCount; i++)
+			{
+				if (iterator -> Content == x)
+				{
+					if (check == CHECK_Y)
+						check = CHECK_XY;
+					else
+						check = CHECK_X;
+						
+					node = iterator -> last;
+					
+					node -> next = new RelationNode();
+					node -> next -> Content = y;
+					yNode = node -> next;
+					
+					iterator -> last = node -> next;
+					
+					xHead = iterator;
+					
+					iterator -> Count++;
+				}
+				
+				if (iterator -> Content == y)
+				{
+					if (check == CHECK_X)
+						check = CHECK_XY;
+					else
+						check = CHECK_Y;
+						
+					node = iterator -> last;
+					
+					node -> next = new RelationNode();
+					node -> next -> Content = x;
+					xNode = node -> next;
+					
+					iterator -> last = node -> next;
+					
+					yHead = iterator;
+					
+					iterator -> Count++;
+				}
+				
+				if (check == CHECK_XY)
+					break;
+				
+				previous = iterator;
+				iterator = iterator -> next;
+			}
+			
+			iterator = previous;
+			
+			switch (check)
+			{
+				case CHECK_NONE:
+					iterator -> next = new RelationHead();
+					iterator = iterator -> next;
+					
+					iterator -> Content = x;
+					iterator -> Count = 1;
+					
+					iterator -> first = new RelationNode();
+					iterator -> first -> Content = y;
+					
+					iterator -> last = iterator -> first;
+					
+					xHead = iterator;
+					yNode = iterator -> first;
+					
+					iterator -> next = new RelationHead();
+					iterator = iterator -> next;
+					
+					iterator -> Content = y;
+					iterator -> Count = 1;
+					
+					iterator -> first = new RelationNode();
+					iterator -> first -> Content = x;
+					
+					iterator -> last = iterator -> first;
+					
+					yHead = iterator;
+					xNode = iterator -> first;
+					
+					_headCount += 2;
+					
+					break;
+				
+				case CHECK_X:
+					iterator -> next = new RelationHead();
+					iterator = iterator -> next;
+					
+					iterator -> Content = y;
+					iterator -> Count = 1;
+					
+					iterator -> first = new RelationNode();
+					iterator -> first -> Content = x;
+					
+					iterator -> last = iterator -> first;
+					
+					yHead = iterator;
+					xNode = iterator -> first;
+					
+					_headCount++;
+					break;
+				
+				case CHECK_Y:
+					iterator -> next = new RelationHead();
+					iterator = iterator -> next;
+					
+					iterator -> Content = x;
+					iterator -> Count = 1;
+					
+					iterator -> first = new RelationNode();
+					iterator -> first -> Content = y;
+					
+					iterator -> last = iterator -> first;
+					
+					xHead = iterator;
+					yNode = iterator -> first;
+					
+					_headCount++;
+					break;
+			}
+			
+			// We now have xNode, xHead, yNode, yHead
+			
+			xNode -> head = xHead;
+			yNode -> head = yHead;
+			
+			if (_debug)
+			{
+				cout << endl;
+				
+				cout << "xNode : " << xNode -> Content << " xHead: " << xHead -> Content << endl;
+				cout << "yNode : " << yNode -> Content << " yHead: " << yHead -> Content << endl;
+				
+				cout << endl;
+			}
+			
+			if (_debug)
+			{
+				if (xHead -> Content == 7)
+					PrintRelationships();
+					
+				RelationHead* temp = (RelationHead*)(yHead -> first -> head);
+				cout << xHead -> Content << " " << temp -> Content << " " << yHead -> first -> Content << endl;
+			}
+			
+			/*
+				list.AddRelationship(5, 2);
+				list.AddRelationship(2, 3);
+				list.AddRelationship(1, 7);
+				list.AddRelationship(7, 5);
+			*/
+			
+			// We now have to take care of xHead and yHead
+			
+			node = xHead -> first;
+			RelationHead* secondHead;
+			
+			for (int i = 0; i < xHead -> Count; i++)
+			{
+				iterator = (RelationHead*)node -> head;
+				
+				if (HeadContainsX(iterator, y))
+					continue;
+				
+				iterator -> last -> next = new RelationNode();
+				iterator -> last -> next -> Content = y;
+				iterator -> last -> next -> head = yHead;
+				
+				iterator -> Count++;
+				
+				iterator -> last = iterator -> last -> next;
+				node = node -> next;
+				
+				if (!HeadContainsX(yHead, iterator -> Content))
+				{
+					if (_debug)
+					{
+						cout << yHead -> Content << " doesn't contain " << iterator -> Content << endl;
+					}
+					
+					// continue;
+					yHead -> last -> next = new RelationNode();
+					yHead -> last -> next -> Content = iterator -> Content;
+					yHead -> last -> next -> head = (void *)iterator;
+					
+					yHead -> Count++;
+					yHead -> last = yHead -> last -> next;
+				}
+				
+				
+			}
+			
+			node = yHead -> first;
+			for (int i = 0; i < yHead -> Count; i++)
+			{
+				iterator = (RelationHead*)node -> head;
+				
+				if (HeadContainsX(iterator, x))
+					continue;
+				
+				iterator -> last -> next = new RelationNode();
+				iterator -> last -> next -> Content = x;
+				iterator -> last -> next -> head = xHead;
+				
+				iterator -> Count++;
+				
+				iterator -> last = iterator -> last -> next;
+				node = node -> next;
+				
+				if (!HeadContainsX(xHead, iterator -> Content))
+				{
+					if(_debug)
+						cout << xHead -> Content << " doesn't contain " << iterator -> Content << endl;
+					
+					// continue;
+					xHead -> last -> next = new RelationNode();
+					xHead -> last -> next -> Content = iterator -> Content;
+					xHead -> last -> next -> head = (void* )iterator;
+					
+					xHead -> Count++;
+					xHead -> last = xHead -> last -> next;
+				}
+				
+				
+			}
+		}
+		
+		bool HeadContainsX(RelationHead* head, int x)
+		{
+			if (head -> Count == 0)
+				return false;
+			
+			RelationNode* iterator = head -> first;
+			for (int i = 0; i < head -> Count; i++)
+			{
+				if (iterator -> Content == x)
+					return true;
+				
+				iterator = iterator -> next;
+			}
+			
+			return false;
+		}
+		
+		void PrintRelationships()
+		{
+			if (_headCount == 0)
+				return;
+			
+			RelationHead* iterator = _head;
+			RelationNode* node;
+			
+			cout << endl << endl << "Relationship data: " << endl;
+			cout << "RelationShip _headCount: " << _headCount << endl << endl;
+			
+			for (int i = 0; i < _headCount; i++)
+			{
+				cout << "From: " << iterator -> Content << endl;
+				cout << "To: ";
+				
+				node = iterator -> first;
+				for (int j = 0; j < iterator -> Count; j++)
+				{
+					cout << node -> Content << " ";
+					node = node -> next;
+				}
+				
+				cout << endl << endl;
+				
+				iterator = iterator -> next;
+			}
+		}
 };
 
 struct DayList
@@ -187,7 +588,7 @@ class Data
 		long _dayCount;
 		long _initialInputCount;
 		
-		bool _debug = true;
+		bool _debug = false;
 		
 		int* GetMemoryArray()
 		{
@@ -268,7 +669,7 @@ class Data
 			DeleteDayList();
 			
 			if (_debug)
-				cout << "Memory Freed for Data!" << endl;
+				DebugPrint("Memory Freed for Data!");
 		}
 		
 		void AddInfo(int day, int x, int y)
@@ -350,7 +751,8 @@ class Data
 				
 				// Commenting the following line causes an error for some unknown reason
 				// TODO: FIND OUT WHY
-				cout << _initialInventory[input - 1] << " : " << input;
+				
+				cout << _initialInventory[input - 1] << " : " << input << endl;
 			}
 		}
 		
@@ -391,7 +793,9 @@ class Data
 		
 		void PrintReverseData()
 		{
-			cout << "Reverse data logs: " << endl;
+			cout << endl << endl;
+			
+			cout << "Reverse data logs: " << endl << endl;
 			cout << "DayCount = " << _dayCount << endl;
 			
 			if (_dayCount == 0)
@@ -410,7 +814,8 @@ class Data
 		
 		void PrintDayData()
 		{
-			cout << "Day data logs: " << endl;
+			cout << endl << endl;
+			cout << "Data logs: " << endl << endl;
 			cout << "DayCount = " << _dayCount << endl;
 			
 			if (_dayCount == 0)
@@ -427,15 +832,31 @@ class Data
 			cout << endl;
 		}
 		
-		void PrintTail()
+		void CalculateProfitArray()
 		{
+			if (_initialInputCount == 0)
+			{
+				if (_debug)
+					DebugPrint("Input probably hasn't been entered yet!");
+				
+				DebugPrint("Can't calculate profit!");
+				return;
+			}
+			
 			if (_dayCount == 0)
 				return;
 			
-			cout << endl;
-			cout << "Tail Information: " << endl;
+			DayList* iterator = _dayListTail;
+			for (int i = 0; i < _dayCount; i++)
+			{
+				CalculateDayProfit(iterator -> Information);
+				iterator = iterator -> previous;
+			}
+		}
+		
+		void CalculateDayProfit(DayInformation* information)
+		{
 			
-			_dayListTail -> Information -> PrintData();
 		}
 };
 
@@ -453,9 +874,17 @@ int main()
 	data.AddInfo(4, 5, 7);
 	data.AddInfo(7, 5, 7);
 	
-	data.PrintData();
-	// data.PrintTail();
-	data.PrintReverseData();
+	// data.PrintData();
+	// data.PrintReverseData();
+	
+	
+	RelationshipList list;
+	list.AddRelationship(5, 2);
+	list.AddRelationship(2, 3);
+	list.AddRelationship(1, 7);
+	list.AddRelationship(7, 5);
+	
+	list.PrintRelationships();
 	
 	return 0;
 }
