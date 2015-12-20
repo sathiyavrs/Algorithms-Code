@@ -180,6 +180,7 @@ class Data
 	private:
 		DayList* _dayListHead;
 		DayList* _dayListTail;
+		
 		int* _profitArray;
 		int* _initialInventory;
 		
@@ -188,10 +189,16 @@ class Data
 		
 		bool _debug = true;
 		
+		int* GetMemoryArray()
+		{
+			int* intArray = new int[TYPE_MAX];
+			return intArray;
+		}
+		
 		void InitializeMemoryArrays()
 		{
-			_profitArray = new int[TYPE_MAX];
-			_initialInventory = new int[TYPE_MAX];
+			_profitArray = GetMemoryArray();
+			_initialInventory = GetMemoryArray();
 			
 			ZeroMemoryArrays();
 		}
@@ -209,6 +216,15 @@ class Data
 		{
 			delete[] _profitArray;
 			delete[] _initialInventory;
+			
+			if (_debug)
+				DebugPrint("Memory Arrays Freed!");
+		}
+		
+		void ZeroMemoryInitialArray()
+		{
+			for (long i = 0; i < TYPE_MAX; i++)
+				_initialInventory[i] = 0;
 		}
 		
 		void DeleteDayList()
@@ -321,17 +337,21 @@ class Data
 		
 		void InputInitialState(long count)
 		{
-			ZeroMemoryArrays();
+			ZeroMemoryInitialArray();
 			int input;
 			
 			_initialInputCount = count;
 
-			while (count--)
+			while (count-- > 0)
 			{
+				// cout << "Input please: ";
 				cin >> input;
 				_initialInventory[input - 1] += 1;
+				
+				// Commenting the following line causes an error for some unknown reason
+				// TODO: FIND OUT WHY
+				cout << _initialInventory[input - 1] << " : " << input;
 			}
-			
 		}
 		
 		void PrintData()
@@ -343,6 +363,12 @@ class Data
 		
 		void PrintInitialData()
 		{
+			if (_initialInputCount == 0)
+			{
+				cout << endl << "No input avaliable at the moment" << endl;
+				return;
+			}
+			
 			cout << endl;
 			cout << "Inventory Data: " << endl;
 			
@@ -358,6 +384,25 @@ class Data
 				
 				if (count >= _initialInputCount)
 					break;
+			}
+			
+			cout << endl;
+		}
+		
+		void PrintReverseData()
+		{
+			cout << "Reverse data logs: " << endl;
+			cout << "DayCount = " << _dayCount << endl;
+			
+			if (_dayCount == 0)
+				return;
+			
+			DayList* iterator = _dayListTail;
+			
+			for (int i = 0; i < _dayCount; i++)
+			{
+				iterator -> Information -> PrintData();
+				iterator = iterator -> previous;
 			}
 			
 			cout << endl;
@@ -410,6 +455,7 @@ int main()
 	
 	data.PrintData();
 	// data.PrintTail();
+	data.PrintReverseData();
 	
 	return 0;
 }
